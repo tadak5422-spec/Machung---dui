@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dui AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0d0f17; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 20px 16px; }
+    .screen { display: none; flex-direction: column; justify-content: space-between; flex: 1; }
+    .screen.active { display: flex; }
+    .badge { width: 48px; height: 48px; border-radius: 14px; background: #1a2333; color: #38bdf8; display: grid; place-items: center; font-weight: 700; font-size: 20px; margin-bottom: 14px; border: 1px solid #263248; }
+    .kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #38bdf8; margin-bottom: 6px; }
+    h1 { font-size: 21px; margin-bottom: 6px; }
+    .sub { color: #94a3b8; font-size: 13px; line-height: 1.45; margin-bottom: 16px; }
+    .card { background: #141824; border: 1px solid #23293a; border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; }
+    .card.selected { border-color: #22c55e; background: #121d24; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .req { font-size: 10px; background: #1e293b; color: #38bdf8; padding: 2px 7px; border-radius: 999px; }
+    .desc { font-size: 12px; color: #94a3b8; margin-top: 4px; line-height: 1.4; }
+    .btn-perm { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 7px 11px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-perm.granted { background: #14532d; color: #86efac; border-color: #22c55e; }
+    .source-row { display: flex; gap: 8px; margin-top: 10px; }
+    .pill { padding: 6px 10px; border-radius: 8px; border: 1px solid #334155; background: #0f131d; color: #cbd5e1; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .pill.active { border-color: #38bdf8; color: #38bdf8; background: #132033; }
+    .step-item { background: #141824; border: 1px solid #23293a; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    .step-item.done { border-color: #22c55e; color: #86efac; }
+    .step-item.running { border-color: #38bdf8; color: #38bdf8; }
+    .bar-wrap { width: 100%; height: 8px; background: #1e293b; border-radius: 999px; overflow: hidden; margin-top: 14px; }
+    .bar-fill { height: 100%; width: 0%; background: #3b82f6; transition: width 0.3s ease; }
+    .switch { width: 44px; height: 24px; border-radius: 999px; background: #1e293b; border: 1px solid #334155; position: relative; transition: 0.2s; flex-shrink: 0; }
+    .switch::after { content: ""; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #94a3b8; top: 2px; left: 2px; transition: 0.2s; }
+    .switch.on { background: #14532d; border-color: #22c55e; }
+    .switch.on::after { left: 22px; background: #86efac; }
+    .cta { width: 100%; padding: 13px; border-radius: 12px; border: none; font-size: 14px; font-weight: 600; background: #3b82f6; color: white; cursor: pointer; margin-top: 10px; }
+    .cta:disabled { background: #1e293b; color: #64748b; cursor: not-allowed; }
+    .back { background: none; border: none; color: #94a3b8; font-size: 13px; margin-bottom: 10px; text-align: left; cursor: pointer; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .icon-btn { background: #141824; border: 1px solid #23293a; color: #e2e8f0; padding: 7px 11px; border-radius: 10px; font-size: 12px; cursor: pointer; }
+    .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    .msg { background: #141824; border: 1px solid #23293a; padding: 11px 13px; border-radius: 12px; font-size: 13px; line-height: 1.45; }
+    .msg.user { background: #16243b; border-color: #2563eb; align-self: flex-end; max-width: 85%; }
+    .prompt-wrap { display: flex; gap: 8px; }
+    .input { flex: 1; background: #141824; border: 1px solid #2a3349; border-radius: 11px; padding: 11px 12px; color: #f1f5f9; font-size: 13px; outline: none; }
+    .send { background: #3b82f6; border: none; color: white; padding: 0 15px; border-radius: 11px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; background: #ef4444; }
+    .dot.ok { background: #22c55e; }
+  </style>
+</head>
+<body>
+
+  <!-- Screen 1: Welcome -->
+  <div class="screen active" id="s1">
+    <div>
+      <div class="badge">D</div>
+      <h1>Welcome to Dui AI</h1>
+      <p class="sub">Grant required permissions so Dui AI and OpenCode can run locally.</p>
+      <div class="card row" id="card-notif">
+        <div>
+          <div class="title">Notifications <span class="req">Required</span></div>
+          <div class="desc">Keep background server and agent active.</div>
+        </div>
+        <button class="btn-perm" id="btn-notif" onclick="togglePerm('notif')">Allow</button>
+      </div>
+      <div class="card row" id="card-files">
+        <div>
+          <div class="title">Files</div>
+          <div class="desc">Access project folders on device storage.</div>
+        </div>
+        <button class="btn-perm" id="btn-files" onclick="togglePerm('files')">Allow</button>
+      </div>
+      <div class="card row" id="card-mic">
+        <div>
+          <div class="title">Microphone</div>
+          <div class="desc">Voice dictation for prompts.</div>
+        </div>
+        <button class="btn-perm" id="btn-mic" onclick="togglePerm('mic')">Allow</button>
+      </div>
+    </div>
+    <button class="cta" id="s1Next" disabled onclick="goScreen('s2')">Continue</button>
+  </div>
+
+  <!-- Screen 2: Linux Environment -->
+  <div class="screen" id="s2">
+    <div>
+      <button class="back" onclick="goScreen('s1')">← Back</button>
+      <h1>Set up your Linux environment</h1>
+      <p class="sub">Choose how to set up your local Linux environment for Dui AI.</p>
+      <div class="card selected" id="env-full" onclick="selectEnv('full')">
+        <div class="title">Full environment</div>
+        <div class="desc">Complete developer tools and packages ready out of the box.</div>
+        <div class="source-row" onclick="event.stopPropagation()">
+          <button class="pill active" id="src-github" onclick="selectSource('GitHub')">GitHub</button>
+          <button class="pill" id="src-hf" onclick="selectSource('Hugging Face')">Hugging Face</button>
+        </div>
+      </div>
+      <div class="card" id="env-minimal" onclick="selectEnv('minimal')">
+        <div class="title">Minimal</div>
+        <div class="
+
+cd ~/dui-ai/bridge
+cat << 'EOF' > server.js
+const http = require('http');
+
+function createService(name, port) {
+  const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/json');
+
+    if (req.url === '/health') {
+      res.writeHead(200);
+      res.end(JSON.stringify({ ok: true, service: name, port }));
+      return;
+    }
+
+    res.writeHead(404);
+    res.end(JSON.stringify({ ok: false, error: 'Not found' }));
+  });
+
+  server.listen(port, '127.0.0.1', () => {
+    console.log(`[${name}] listening on http://127.0.0.1:${port}`);
+  });
+}
+
+createService('Dui AI Bridge', 1236);
+createService('Dui AI Hub', 1237);

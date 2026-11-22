@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dui AI</string>
+    <string name="title_activity_main">Dui AI</string>
+    <string name="package_name">com.duiai.app</string>
+    <string name="custom_url_scheme">com.duiai.app</string>
+</resources>
